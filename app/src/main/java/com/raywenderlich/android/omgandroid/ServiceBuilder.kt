@@ -7,7 +7,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-//test comment
 interface Endpoints {
     @GET("search.json")
     fun getBooks(@Query("q") key: String): Call<Books>
@@ -32,7 +31,6 @@ fun provideApi(retrofit: Retrofit): Endpoints {
     return retrofit.create(Endpoints::class.java)
 }
 
-//module used by koin for injection
 val networkModule = module {
     single { provideGson() }
     single { provideOkHttpClient() }
