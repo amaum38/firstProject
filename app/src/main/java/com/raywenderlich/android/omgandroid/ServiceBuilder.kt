@@ -12,6 +12,11 @@ interface Endpoints {
     fun getBooks(@Query("q") key: String): Call<Books>
 }
 
+interface ResponseInterface {
+    fun onSucess()
+    fun onFailure(code: String)
+}
+
 fun provideGson(): GsonConverterFactory {
     return GsonConverterFactory.create()
 }

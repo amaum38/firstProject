@@ -22,10 +22,11 @@
 package com.raywenderlich.android.omgandroid
 
 import Endpoints
+import ResponseInterface
 import android.app.AlertDialog
 import android.content.Context
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import android.widget.AdapterView.OnItemClickListener
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.content.DialogInterface
@@ -33,11 +34,10 @@ import android.content.Intent
 import androidx.core.view.MenuItemCompat
 import androidx.appcompat.widget.ShareActionProvider
 import android.text.InputType
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.raywenderlich.android.omgandroid.databinding.ActivityMainBinding
 import org.koin.android.ext.android.inject
@@ -70,7 +70,7 @@ class Foo(val bar: Bar) {
     }
 }
 
-class MainActivity : AppCompatActivity(), View.OnClickListener, BookAdapterRec.OnItemClickListener {
+class MainActivity : AppCompatActivity(), BookAdapterRec.OnItemClickListener {
     private var shareActionProvider: ShareActionProvider? = null
     private val sharedPreferences: SharedPreferences by inject()
     private lateinit var binding: ActivityMainBinding
@@ -84,8 +84,28 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, BookAdapterRec.O
         val view = binding.root
         setContentView(view)
 
-        binding.mainButton.setOnClickListener(this)
-       // binding.mainListview.onItemClickListener = this
+        val model: BookViewModel by viewModels()
+        model.getBooks().observe(this, { books ->
+            adapter.updateData(books)
+        })
+
+        binding.mainButton.setOnClickListener {
+            binding.progressBar.isIndeterminate = true
+            model.queryBooks(binding.mainEdittext.text.toString(), object : ResponseInterface {
+                override fun onSucess() {
+                    binding.emptyView.visibility = View.GONE
+                    binding.mainListview.visibility = View.VISIBLE
+                    binding.progressBar.isIndeterminate = false
+                }
+
+                override fun onFailure(code: String) {
+                    binding.emptyView.visibility = View.VISIBLE
+                    binding.mainListview.visibility = View.GONE
+                    binding.progressBar.isIndeterminate = false
+                    Toast.makeText(this@MainActivity, code, Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
 
         // 7. Greet the user, or ask for their name if new
         displayWelcome()
@@ -139,15 +159,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, BookAdapterRec.O
             alert.setNegativeButton("Cancel") { _: DialogInterface?, _: Int -> }
             alert.show()
         }
-    }
-
-    override fun onClick(v: View) {
-        queryBooks2(binding.mainEdittext.text.toString())
-        val inputManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        inputManager.hideSoftInputFromWindow(
-            this.currentFocus?.windowToken,
-            InputMethodManager.HIDE_NOT_ALWAYS
-        )
     }
 
     override fun onItemClicked(book: Book) {
